@@ -1,0 +1,3 @@
+/Users/sahidalafzal/Desktop/HydroGate/build/CMakeFiles/hydrogate.dir
+/Users/sahidalafzal/Desktop/HydroGate/build/CMakeFiles/edit_cache.dir
+/Users/sahidalafzal/Desktop/HydroGate/build/CMakeFiles/rebuild_cache.dir
