@@ -37,7 +37,7 @@ bool TokenBucket::allow_request(const std::string& client_ip) {
     // Evaluate if the request can be processed
     if(bucket.tokens >= 1.0) {
         bucket.tokens -= 1.0;
-        bucket.last_access = now;
+        bucket.last_access = now;                  // Only update the timestamp if accepted
 
         return true;
     }
