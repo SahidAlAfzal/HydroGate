@@ -12,12 +12,17 @@ RUN apt-get update && apt-get install -y \
     cmake \
     git \
     wget \
-    libssl-dev \
-    libhiredis-dev
+    libssl-dev
+
+WORKDIR /deps
+
+# Clone and build hiredis from source with SSL support
+RUN git clone https://github.com/redis/hiredis.git && \
+    cd hiredis && \
+    make USE_SSL=1 && \
+    make install
 
 # Clone and build redis-plus-plus from source 
-# (Since it is not always available in standard apt repositories)
-WORKDIR /deps
 RUN git clone https://github.com/sewenew/redis-plus-plus.git && \
     cd redis-plus-plus && \
     mkdir build && cd build && \
@@ -41,18 +46,18 @@ FROM ubuntu:22.04 AS runtime
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Install only the runtime libraries needed
+# Install only the runtime libraries needed (OpenSSL)
 RUN apt-get update && apt-get install -y \
-    libhiredis0.14 \
     libssl3 \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy the redis++ compiled library from the builder stage
+# Copy the hiredis and redis++ compiled libraries from the builder stage
+COPY --from=builder /usr/local/lib/libhiredis.so* /usr/local/lib/
+COPY --from=builder /usr/local/lib/libhiredis_ssl.so* /usr/local/lib/
 COPY --from=builder /usr/local/lib/libredis++.so* /usr/local/lib/
-COPY --from=builder /usr/local/lib/libredis++.a /usr/local/lib/
 
-# Update linker cache so it finds libredis++
+# Update linker cache so it finds the custom libraries
 RUN ldconfig
 
 # Copy the compiled HydroGate binary
