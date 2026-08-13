@@ -16,6 +16,7 @@ find_package(OpenSSL REQUIRED)
 # so we locate them safely.
 find_path(HIREDIS_INCLUDE_DIR hiredis/hiredis.h)
 find_library(HIREDIS_LIBRARY hiredis)
+find_library(HIREDIS_SSL_LIBRARY hiredis_ssl)
 
 find_path(REDISPP_INCLUDE_DIR sw/redis++/redis++.h)
 find_library(REDISPP_LIBRARY redis++)
@@ -29,6 +30,7 @@ add_executable(hydrogate src/main.cpp src/RedisTokenBucket.cpp)
 # 4. Link libraries dynamically
 target_link_libraries(hydrogate 
     ${HIREDIS_LIBRARY} 
+    ${HIREDIS_SSL_LIBRARY}
     ${REDISPP_LIBRARY} 
     OpenSSL::SSL 
     OpenSSL::Crypto
