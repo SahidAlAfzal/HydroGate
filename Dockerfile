@@ -20,7 +20,7 @@ WORKDIR /deps
 RUN git clone https://github.com/redis/hiredis.git && \
     cd hiredis && \
     make USE_SSL=1 && \
-    make install
+    make USE_SSL=1 install
 
 # Clone and build redis-plus-plus from source 
 RUN git clone https://github.com/sewenew/redis-plus-plus.git && \
