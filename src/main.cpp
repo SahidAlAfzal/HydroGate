@@ -131,40 +131,27 @@ httplib::Server::HandlerResponse proxy_handler(
 }
 
 // ---------------------------------------------------------
-// Helper to clean environment variables from Render dashboard
-// ---------------------------------------------------------
-std::string clean_env_var(const char* env_val) {
-    if (!env_val) return "";
-    std::string str = env_val;
-    auto start = str.find_first_not_of(" \t\r\n\"'");
-    if (start == std::string::npos) return "";
-    auto end = str.find_last_not_of(" \t\r\n\"'");
-    return str.substr(start, end - start + 1);
-}
-
-// ---------------------------------------------------------
 // Main Entry Point
 // ---------------------------------------------------------
 int main() {
     // 1. Load the environment variables natively
     load_env();
     
-    std::string redis_url = clean_env_var(std::getenv("REDIS_URL"));
-    std::string messbook_url = clean_env_var(std::getenv("MESSBOOK_URL")); 
+    const char* redis_url = std::getenv("REDIS_URL");
+    const char* messbook_url = std::getenv("MESSBOOK_URL"); 
 
-    if (redis_url.empty() || messbook_url.empty()) {
+    if (redis_url == nullptr || messbook_url == nullptr) {
         throw std::runtime_error("[CRITICAL] REDIS_URL or MESSBOOK_URL is not set in .env");
     }
     
     std::cout << "--- Security: Environment Variables Loaded ---\n";
-    std::cout << "[DEBUG] Redis URL Scheme starts with: " << redis_url.substr(0, 10) << "...\n";
 
     // 2. Initialize HydroGate rate limiter (Dependency)
-    RedisTokenBucket rate_limiter(redis_url.c_str(), 5.0, 1.0);
+    RedisTokenBucket rate_limiter(redis_url, 5.0, 1.0);
     httplib::Server gateway;
 
     // 3. Initialize the proxy client to your live FastAPI production server (Dependency)
-    httplib::Client messbook_backend(messbook_url.c_str());
+    httplib::Client messbook_backend(messbook_url);
     messbook_backend.enable_server_certificate_verification(false); 
 
     // 4. The Universal Proxy Router (Dependency Injection)
