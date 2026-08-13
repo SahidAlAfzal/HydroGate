@@ -1,22 +1,40 @@
 cmake_minimum_required(VERSION 3.10)
 project(HydroGate)
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)   # This generates a compile_commands.json file
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# 1. Point to the header files
+# 1. Point to the local header files
 include_directories(include)
-include_directories(/opt/homebrew/include)               # hiredis
-include_directories(/usr/local/include)                  # redis++
-include_directories(/opt/homebrew/opt/openssl@3/include) # OpenSSL
 
-# 2. Point to the compiled library files
-link_directories(/opt/homebrew/lib)                      # libhiredis
-link_directories(/usr/local/lib)                         # libredis++
-link_directories(/opt/homebrew/opt/openssl@3/lib)        # OpenSSL libs
+# 2. Industry Standard: Dynamically searches the host operating system for OpenSSL libraries instead of using hardcoded paths.
+find_package(OpenSSL REQUIRED)
+
+# hiredis and redis++ might not have standard Find modules on all OS, 
+# so we locate them safely.
+find_path(HIREDIS_INCLUDE_DIR hiredis/hiredis.h)
+find_library(HIREDIS_LIBRARY hiredis)
+
+find_path(REDISPP_INCLUDE_DIR sw/redis++/redis++.h)
+find_library(REDISPP_LIBRARY redis++)
+
+include_directories(${OPENSSL_INCLUDE_DIR} ${HIREDIS_INCLUDE_DIR} ${REDISPP_INCLUDE_DIR})
+# Tells the compiler where to look when it sees an #include <...> statement
 
 # 3. Build executable
 add_executable(hydrogate src/main.cpp src/RedisTokenBucket.cpp)
 
-# 4. Explicitly link libraries AND macOS security frameworks
-target_link_libraries(hydrogate hiredis redis++ ssl crypto "-framework CoreFoundation" "-framework Security")
+# 4. Link libraries dynamically
+target_link_libraries(hydrogate 
+    ${HIREDIS_LIBRARY} 
+    ${REDISPP_LIBRARY} 
+    OpenSSL::SSL 
+    OpenSSL::Crypto
+)
+
+# Apple-specific security frameworks (only required if compiling natively on macOS)
+if(APPLE)
+    target_link_libraries(hydrogate "-framework CoreFoundation" "-framework Security")
+endif()
