@@ -2,9 +2,33 @@
 #include <chrono>
 #include <vector>
 #include <string>
+#include <iostream>
 
+static sw::redis::Redis create_redis_client(const std::string& url) {
+    std::string raw_url = url;
+    bool use_tls = false;
+    
+    if (raw_url.find("rediss://") == 0) {
+        use_tls = true;
+        raw_url.replace(0, 9, "tcp://");
+    } else if (raw_url.find("redis://") == 0) {
+        raw_url.replace(0, 8, "tcp://");
+    }
+    
+    sw::redis::Uri uri(raw_url);
+    auto opts = uri.connection_options();
+    
+    if (use_tls) {
+        opts.tls.enabled = true;
+        // Upstash often requires Server Name Indication (SNI) for TLS routing
+        opts.tls.sni = opts.host; 
+    }
+    
+    return sw::redis::Redis(opts, uri.connection_pool_options());
+}
 
-RedisTokenBucket::RedisTokenBucket(const std::string& redis_url, double cap, double rate) : redis(redis_url), capacity(cap), refill_rate(rate) {}
+RedisTokenBucket::RedisTokenBucket(const std::string& redis_url, double cap, double rate) 
+    : redis(create_redis_client(redis_url)), capacity(cap), refill_rate(rate) {}
 
 
 bool RedisTokenBucket::allow_request(const std::string& client_ip) {
